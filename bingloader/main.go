@@ -8,13 +8,17 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
 	outDir := "."
+	setBG := false
 	flag.StringVar(&outDir, "dir", outDir, "Output directory")
+	flag.BoolVar(&setBG, "bg", setBG, "Set as desktop background")
 	flag.Parse()
 
 	base, err := urlBase()
@@ -31,28 +35,32 @@ func main() {
 	}
 
 	outFile := filepath.Join(outDir, path.Base(url))
-	if _, err := os.Stat(outFile); err == nil {
+	if _, err := os.Stat(outFile); err != nil {
+		fd, err := os.Create(outFile)
+		if err != nil {
+			fmt.Println("Outfile:", err)
+			os.Exit(1)
+		}
+
+		if _, err := io.Copy(fd, resp.Body); err != nil {
+			fmt.Println("Copy:", err)
+			os.Exit(1)
+		}
+
+		if err := fd.Close(); err != nil {
+			fmt.Println("Close:", err)
+			os.Exit(1)
+		}
+	}
+
+	if setBG {
+		if err := setBackground(outFile); err != nil {
+			fmt.Println("Setting background:", err)
+			os.Exit(1)
+		}
+	} else {
 		fmt.Println(outFile)
-		os.Exit(2)
 	}
-
-	fd, err := os.Create(outFile)
-	if err != nil {
-		fmt.Println("Outfile:", err)
-		os.Exit(1)
-	}
-
-	if _, err := io.Copy(fd, resp.Body); err != nil {
-		fmt.Println("Copy:", err)
-		os.Exit(1)
-	}
-
-	if err := fd.Close(); err != nil {
-		fmt.Println("Close:", err)
-		os.Exit(1)
-	}
-
-	fmt.Println(outFile)
 }
 
 type bingXML struct {
@@ -79,4 +87,14 @@ func urlBase() (string, error) {
 	}
 
 	return result.Image[0].URLBase, nil
+}
+
+func setBackground(image string) error {
+	script := fmt.Sprintf(`tell application "Finder"
+set desktop picture to POSIX file "%s"
+end tell
+`, image)
+	cmd := exec.Command("/usr/bin/osascript")
+	cmd.Stdin = strings.NewReader(script)
+	return cmd.Run()
 }
