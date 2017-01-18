@@ -31,6 +31,11 @@ func main() {
 	}
 
 	outFile := filepath.Join(outDir, path.Base(url))
+	if _, err := os.Stat(outFile); err == nil {
+		fmt.Println(outFile)
+		os.Exit(2)
+	}
+
 	fd, err := os.Create(outFile)
 	if err != nil {
 		fmt.Println("Outfile:", err)
