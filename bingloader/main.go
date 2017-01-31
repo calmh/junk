@@ -16,8 +16,10 @@ import (
 
 func main() {
 	outDir := "."
+	resolution := "1920x1200"
 	setBG := false
 	flag.StringVar(&outDir, "dir", outDir, "Output directory")
+	flag.StringVar(&resolution, "res", resolution, "Resolution")
 	flag.BoolVar(&setBG, "bg", setBG, "Set as desktop background")
 	flag.Parse()
 
@@ -27,8 +29,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	url := fmt.Sprintf("http://www.bing.com%s_%s.jpg", base, "1920x1200")
+	url := fmt.Sprintf("http://www.bing.com%s_%s.jpg", base, resolution)
 	resp, err := http.Get(url)
+	if err == nil && resp.StatusCode > 299 {
+		err = errors.New(resp.Status)
+	}
 	if err != nil {
 		fmt.Println("Loading image:", err)
 		os.Exit(1)
@@ -51,14 +56,16 @@ func main() {
 			fmt.Println("Close:", err)
 			os.Exit(1)
 		}
+
+		if setBG {
+			if err := setBackground(outFile); err != nil {
+				fmt.Println("Setting background:", err)
+				os.Exit(1)
+			}
+		}
 	}
 
-	if setBG {
-		if err := setBackground(outFile); err != nil {
-			fmt.Println("Setting background:", err)
-			os.Exit(1)
-		}
-	} else {
+	if !setBG {
 		fmt.Println(outFile)
 	}
 }
