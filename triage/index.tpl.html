@@ -1,0 +1,84 @@
+{{- define "user" -}}
+<a href="{{.HTMLURL}}" class="user">@{{.Login}}</a>
+{{- end -}}
+
+{{- define "issueTable" -}}
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Issue</th>
+        <th>Description (Creator)</th>
+        <th class="text-right">Age</th>
+    </tr>
+    </thead>
+    {{range .}}
+    <tr>
+        <td><a href="{{.HTMLURL}}">#{{.Number}}</a></td>
+        <td>{{.Title}} ({{template "user" .User}})</td>
+        <td class="text-right">{{.CreatedAt | daysAgo}}</td>
+    </tr>
+    {{end}}
+</table>
+{{- end -}}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Issue Triaging</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
+    <style type="text/css">
+        body {
+            padding: 35px 0px;
+        }
+        body, p, td, th {
+            font-size: 12pt;
+        }
+
+        .no-wrap {
+            white-space: nowrap;
+        }
+
+        .spacer {
+            height: 35px;
+        }
+
+        #logo {
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-5">
+                <img src="https://syncthing.net/images/logo-horizontal.svg" id="logo">
+            </div>
+            <div class="col-md-7 text-right">
+                <h1>Syncthing Issue Triage</h1>
+            </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Unclassified Issues</h2>
+                <p>Issues that lack a milestone. They need to be clarified to the point where they are actionable. Then they should be classified with the <code>bug</code> or <code>enhancement</code> labels and be added to either the <code>Planned</code> or <code>Unplanned (Contributions Welcome)</code> milestone.</p>
+                {{template "issueTable" .Triage}}
+            </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Old Bugs</h2>
+                <p>These bugs are older than a year. We might want to consider whether they are still relevant and serious, or maybe just actually fix them.</p>
+                {{template "issueTable" .OldBugs}}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
