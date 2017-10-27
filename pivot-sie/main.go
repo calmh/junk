@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"sort"
 	"strconv"
@@ -107,59 +106,48 @@ func main() {
 
 	sort.Sort(vers)
 
-	var accounts map[int]int
-	var currentMonth int
-
-	fmt.Println("Month,Category,Value")
+	accounts := make(map[int]map[int]int) // month => account => value
+	accountUsed := make(map[int]bool)
 
 	for _, ver := range vers {
 		month := ver.Date / 100
-		if month != currentMonth {
-			if currentMonth != 0 {
-				getSummary(currentMonth, accounts).WriteTo(os.Stdout)
-			}
-			accounts = make(map[int]int)
-			currentMonth = month
+		accs, ok := accounts[month]
+		if !ok {
+			accs = make(map[int]int)
+			accounts[month] = accs
 		}
 		for _, tran := range ver.Trans {
-			accounts[tran.Account] += tran.Amount
+			accs[tran.Account] += tran.Amount
+			accountUsed[tran.Account] = true
 		}
 	}
 
-	getSummary(currentMonth, accounts).WriteTo(os.Stdout)
-}
-
-type summary struct {
-	month     string
-	income    int
-	expenses  int
-	employees int
-}
-
-func (s summary) WriteTo(w io.Writer) error {
-	if _, err := fmt.Fprintf(w, `"%s","Income",%d`+"\n", s.month, s.income); err != nil {
-		return err
+	var months []int
+	var accountIDs []int
+	for month := range accounts {
+		months = append(months, month)
 	}
-	if _, err := fmt.Fprintf(w, `"%s","Expenses",%d`+"\n", s.month, s.expenses); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintf(w, `"%s","Employees",%d`+"\n", s.month, s.employees); err != nil {
-		return err
-	}
-	return nil
-}
-
-func getSummary(month int, m map[int]int) (s summary) {
-	s.month = fmt.Sprintf("%04d-%02d", month/100, month%100)
-	for account, value := range m {
-		switch account / 1000 {
-		case 3:
-			s.income -= value
-		case 5, 6:
-			s.expenses += value
-		case 7:
-			s.employees += value
+	for acc := range accountUsed {
+		if acc/1000 < 3 {
+			continue
 		}
+		accountIDs = append(accountIDs, acc)
 	}
-	return
+	sort.Ints(months)
+	sort.Ints(accountIDs)
+
+	fmt.Printf(`"Month"`)
+	for _, acc := range accountIDs {
+		fmt.Printf(`;"%d"`, acc)
+	}
+	fmt.Println()
+
+	for _, month := range months {
+		fmt.Printf(`"%d-%d"`, month/100, month%100)
+		for _, acc := range accountIDs {
+			v := fmt.Sprintf("%.02f", float64(accounts[month][acc])/100)
+			fmt.Printf(";%s", strings.Replace(v, ".", ",", 1))
+		}
+		fmt.Println()
+	}
 }

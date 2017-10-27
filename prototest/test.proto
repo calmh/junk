@@ -1,0 +1,11 @@
+// protoc -I ../../../../ -I ../../../gogo/protobuf/protobuf -I . --gogofast_out=. test.proto
+
+syntax = "proto3";
+
+package prototest;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+message Test {
+    repeated int32 indexes = 1 [packed=false];
+}
