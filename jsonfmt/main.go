@@ -23,7 +23,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	buf.WriteTo(os.Stdout)
+	fmt.Printf("%s\n", buf.Bytes())
 }
 
 func closeJSON(bs []byte) []byte {
